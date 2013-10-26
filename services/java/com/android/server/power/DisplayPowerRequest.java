@@ -62,6 +62,10 @@ final class DisplayPowerRequest {
     // visible to the user.
     public boolean blockScreenOn;
 
+    // Slim settings - override config for ElectronBeam on or off
+    public int electronBeamMode;
+    public boolean electronBeamOffEnabled;
+
     // Multiplication factor for delays used in auto-brightness computations
     // Lower values mean faster reaction to changing light conditions, but
     // potentially higher CPU usage and flicker.
@@ -74,6 +78,8 @@ final class DisplayPowerRequest {
         screenAutoBrightnessAdjustment = 0.0f;
         useAutoBrightness = false;
         blockScreenOn = false;
+        electronBeamMode = 0;
+        electronBeamOffEnabled = false;
         responsitivityFactor = 1.0f;
     }
 
@@ -89,6 +95,12 @@ final class DisplayPowerRequest {
         useAutoBrightness = other.useAutoBrightness;
         blockScreenOn = other.blockScreenOn;
         responsitivityFactor = other.responsitivityFactor;
+        electronBeamMode = other.electronBeamMode;
+        electronBeamOffEnabled = other.electronBeamOffEnabled;
+    }
+
+    public int getElectronBeamMode() {
+        return electronBeamMode;
     }
 
     @Override
@@ -105,7 +117,10 @@ final class DisplayPowerRequest {
                 && screenAutoBrightnessAdjustment == other.screenAutoBrightnessAdjustment
                 && useAutoBrightness == other.useAutoBrightness
                 && blockScreenOn == other.blockScreenOn
-                && Math.abs(responsitivityFactor - other.responsitivityFactor) < 1E-6;
+                && Math.abs(responsitivityFactor - other.responsitivityFactor) < 1E-6
+                && blockScreenOn == other.blockScreenOn
+                && electronBeamMode == other.electronBeamMode
+                && electronBeamOffEnabled == other.electronBeamOffEnabled;
     }
 
     @Override
@@ -121,6 +136,9 @@ final class DisplayPowerRequest {
                 + ", screenAutoBrightnessAdjustment=" + screenAutoBrightnessAdjustment
                 + ", useAutoBrightness=" + useAutoBrightness
                 + ", blockScreenOn=" + blockScreenOn
-                + ", responsitivityFactor=" + responsitivityFactor;
+                + ", responsitivityFactor=" + responsitivityFactor
+                + ", blockScreenOn=" + blockScreenOn
+                + ", electronBeamMode=" + electronBeamMode
+                + ", electronBeamOffEnabled=" + electronBeamOffEnabled;
     }
 }
