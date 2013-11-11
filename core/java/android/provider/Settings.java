@@ -2953,18 +2953,6 @@ public final class Settings {
          */
         public static final String MAX_NOTIFICATION_ICONS = "max_notification_icons";
 
-        /**
-         * Whether to show or not clock on statusbar
-         * @hide
-         */
-        public static final String STATUS_BAR_SHOW_CLOCK = "status_bar_show_clock";
-
-        /**
-         * AM/PM style on statusbar, either normal, small or gone.
-         * @hide
-         */
-        public static final String STATUS_BAR_AM_PM_STYLE = "status_bar_am_pm_style";
-
         /**	
          * Circle battery, default = 0, standard android battery
          * @hide
@@ -3606,6 +3594,48 @@ public final class Settings {
          *  we always vibrate, even if no vibration was specified
          */
         public static final String NOTIFICATION_CONVERT_SOUND_TO_VIBRATION = "convert_sound_to_vibration";
+
+        /**
+         * AM/PM Style for clock options
+         * 0 - Normal AM/PM
+         * 1 - Small AM/PM
+         * 2 - No AM/PM
+         * @hide
+         */
+        public static final String STATUSBAR_CLOCK_AM_PM_STYLE = "statusbar_clock_am_pm_style";
+
+        /**
+         * Style of clock
+         * 0 - Hide Clock
+         * 1 - Right Clock
+         * 2 - Center Clock
+         * @hide
+         */
+        public static final String STATUSBAR_CLOCK_STYLE = "statusbar_clock_style";
+
+        /**
+        * @hide
+        * Shows custom date before clock time
+        * 0 - No Date
+        * 1 - Small Date
+        * 2 - Normal Date
+        */
+        public static final String STATUSBAR_CLOCK_DATE_DISPLAY = "statusbar_clock_date_display";
+
+        /**
+        * @hide
+        * Sets the date string style
+        * 0 - Regular style
+        * 1 - Lowercase
+        * 2 - Uppercase
+        */
+        public static final String STATUSBAR_CLOCK_DATE_STYLE = "statusbar_clock_date_style";
+
+        /**
+        * @hide
+        * Stores the java DateFormat string for the date
+        */
+        public static final String STATUSBAR_CLOCK_DATE_FORMAT = "statusbar_clock_date_format";
 
     }
 

@@ -845,6 +845,8 @@
   <java-symbol type="string" name="wday1_date1_time1_wday2_date2_time2" />
   <java-symbol type="string" name="wday1_date1_wday2_date2" />
   <java-symbol type="string" name="wday_date" />
+  <java-symbol type="string" name="twelve_hour_time_format" />
+  <java-symbol type="string" name="twenty_four_hour_time_format" />
   <java-symbol type="string" name="web_user_agent" />
   <java-symbol type="string" name="web_user_agent_target_content" />
   <java-symbol type="string" name="webpage_unresponsive" />
