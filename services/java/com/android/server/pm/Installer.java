@@ -273,6 +273,7 @@ public final class Installer {
         builder.append(uid);
         builder.append(' ');
         builder.append(userId);
+        builder.append(" !"); // Added to fix the problem, that installd complaints that command mkuserdata requires 4 parameters
         return execute(builder.toString());
     }
 
