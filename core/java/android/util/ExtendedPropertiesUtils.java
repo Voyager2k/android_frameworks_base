@@ -311,6 +311,38 @@ public class ExtendedPropertiesUtils {
         return layout >= 1000;
     }
 
+    /**
+     * Returns whether if device is on Phablet UI or not
+     *
+     * @return device is phablet
+     */
+    public static boolean isPhablet() {
+        int layout;
+        String prop = readProperty("com.android.systemui.layout", "0");
+        if(isParsableToInt(prop)) {
+            layout = Integer.parseInt(prop);
+        } else {
+            layout = getActualProperty(prop);
+        }
+        return layout < 1000 && layout >= 600;
+    }
+
+    /**
+     * Returns whether if device is on Phone UI or not
+     *
+     * @return device is phone
+     */
+    public static boolean isPhone() {
+        int layout;
+        String prop = readProperty("com.android.systemui.layout", "0");
+        if(isParsableToInt(prop)) {
+            layout = Integer.parseInt(prop);
+        } else {
+            layout = getActualProperty(prop);
+        }
+        return layout < 600;
+    }
+
     
     /**
      * Returns an {@link ApplicationInfo}, with the given path.
