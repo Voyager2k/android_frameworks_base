@@ -537,6 +537,7 @@ public class PhoneStatusBar extends BaseStatusBar {
         mLocationController = new LocationController(mContext); // will post a notification
         mBatteryController = new BatteryController(mContext);
         mBatteryController.addIconView((ImageView)mStatusBarView.findViewById(R.id.battery));
+        mBatteryController.addLabelView((TextView)mStatusBarView.findViewById(R.id.battery_text));
         mNetworkController = new NetworkController(mContext);
         mBluetoothController = new BluetoothController(mContext);
         mSignalCluster =
@@ -551,6 +552,7 @@ public class PhoneStatusBar extends BaseStatusBar {
         if (mHasDockBattery) {
             mDockBatteryController = new DockBatteryController(mContext);
             mDockBatteryController.addIconView((ImageView)mStatusBarView.findViewById(R.id.dock_battery));
+            mDockBatteryController.addLabelView((TextView)mStatusBarView.findViewById(R.id.dock_battery_text));
         } else {
             // Remove dock battery icons if device doesn't have dock battery support
             View v = mStatusBarView.findViewById(R.id.dock_battery);

@@ -44,7 +44,7 @@ public class BatteryController extends BroadcastReceiver {
     private ArrayList<ImageView> mIconViews = new ArrayList<ImageView>();
     private ArrayList<TextView> mLabelViews = new ArrayList<TextView>();
 
-    public static final int BATTERY_STYLE_NORMAL         = 0;
+    public static final int BATTERY_STYLE_GONE           = 0;
     /***
      * BATTERY_STYLE_CIRCLE* cannot be handled in this controller, since we cannot get views from
      * statusbar here. Yet it is listed for completion and not to confuse at future updates
@@ -52,18 +52,20 @@ public class BatteryController extends BroadcastReceiver {
      *
      * set to public to be reused by CircleBattery
      */
-    public static final int BATTERY_STYLE_CIRCLE         = 1;
-    public static final int BATTERY_STYLE_PERCENT        = 2; // Not Used
-    public static final int BATTERY_STYLE_CIRCLE_PERCENT = 3; // Not Used
-    public static final int BATTERY_STYLE_GONE           = 4; // Not Used
+    public static final int BATTERY_STYLE_NORMAL         = 1;
+    public static final int BATTERY_STYLE_PERCENT        = 2; 
+    public static final int BATTERY_STYLE_CIRCLE         = 3;
+    public static final int BATTERY_STYLE_CIRCLE_PERCENT = 4;
+    public static final int BATTERY_STYLE_GEARCIRCLE     = 5; 
 
 
     private static final int BATTERY_TEXT_STYLE_NORMAL  = R.string.status_bar_settings_battery_meter_format;
+    private static final int BATTERY_TEXT_STYLE_MIN     = R.string.status_bar_settings_battery_meter_min_format;
 
     protected int mLevel;
     private boolean mBatteryPlugged = false;
     private int mBatteryStatus = BatteryManager.BATTERY_STATUS_UNKNOWN;
-    private int mBatteryStyle;
+    public int mBatteryStyle;
     private ColorUtils.ColorSettingInfo mColorInfo;
 
     Handler mHandler;
@@ -76,7 +78,7 @@ public class BatteryController extends BroadcastReceiver {
         void observe() {
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_CIRCLE_BATTERY), false, this);
+                    Settings.System.STATUSBAR_BATTERY_ICON), false, this);
         }
 
         @Override public void onChange(boolean selfChange) {
@@ -129,8 +131,14 @@ public class BatteryController extends BroadcastReceiver {
     public int getIconStyleNormal() {
         return R.drawable.stat_sys_battery;
     }
+    public int getIconStyleCircle() {
+        return R.drawable.stat_sys_battery_circle;
+    }
     public int getIconStyleCharge() {
         return R.drawable.stat_sys_battery_charge;
+    }
+    public int getIconStyleCircleCharge() {
+        return R.drawable.stat_sys_battery_charge_circle;
     }
     public int getIconStyleNormalMin() {
         return R.drawable.stat_sys_battery_min;
@@ -225,6 +233,10 @@ public class BatteryController extends BroadcastReceiver {
                 mText = (View.VISIBLE);
                 mIconStyle = isBatteryStatusCharging() ?
                                 getIconStyleChargeMin() : getIconStyleNormalMin();
+            } else if (mBatteryStyle == BATTERY_STYLE_GEARCIRCLE) {
+                mIcon = (View.VISIBLE);
+                mIconStyle = isBatteryStatusCharging() ?
+                                getIconStyleCircleCharge() : getIconStyleCircle();
             }
         }
 
@@ -255,7 +267,7 @@ public class BatteryController extends BroadcastReceiver {
     private void updateSettings() {
         ContentResolver resolver = mContext.getContentResolver();
         mBatteryStyle = (Settings.System.getInt(resolver,
-                Settings.System.STATUS_BAR_CIRCLE_BATTERY, BATTERY_STYLE_NORMAL));
+                Settings.System.STATUSBAR_BATTERY_ICON, BATTERY_STYLE_NORMAL));
         updateBattery();
     }
 }

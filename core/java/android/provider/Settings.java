@@ -2953,12 +2953,6 @@ public final class Settings {
          */
         public static final String MAX_NOTIFICATION_ICONS = "max_notification_icons";
 
-        /**	
-         * Circle battery, default = 0, standard android battery
-         * @hide
-         */
-        public static final String STATUS_BAR_CIRCLE_BATTERY = "status_bar_circle_battery";
-
         /**
          * Quick Settings Panel Tiles to Use
          * @hide

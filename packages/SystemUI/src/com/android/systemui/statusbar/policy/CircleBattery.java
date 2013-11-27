@@ -55,10 +55,12 @@ public class CircleBattery extends ImageView {
     private Handler mHandler;
     private Context mContext;
     private BatteryReceiver mBatteryReceiver = null;
+    private SettingsObserver mObserver;
 
     // state variables
     private boolean mAttached;      // whether or not attached to a window
     private boolean mActivated;     // whether or not activated due to system settings
+    private boolean mPercentage;    // whether or not to show percentage number
     private boolean mBatteryPlugged;// whether or not battery is currently plugged
     private int     mBatteryStatus; // current battery status
     private int     mLevel;         // current battery level
@@ -98,16 +100,21 @@ public class CircleBattery extends ImageView {
         public void observe() {
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_CIRCLE_BATTERY), false, this);
+                    Settings.System.STATUSBAR_BATTERY_ICON), false, this);
             onChange(true);
+        }
+
+        public void unobserve() {
+            mContext.getContentResolver().unregisterContentObserver(this);
         }
 
         @Override
         public void onChange(boolean selfChange) {
             int batteryStyle = (Settings.System.getInt(mContext.getContentResolver(),
-                    Settings.System.STATUS_BAR_CIRCLE_BATTERY, 0));
+                    Settings.System.STATUSBAR_BATTERY_ICON, 0));
 
-            mActivated = (batteryStyle == BatteryController.BATTERY_STYLE_CIRCLE);
+            mActivated = (batteryStyle == BatteryController.BATTERY_STYLE_CIRCLE || batteryStyle == BatteryController.BATTERY_STYLE_CIRCLE_PERCENT);
+            mPercentage = (batteryStyle == BatteryController.BATTERY_STYLE_CIRCLE_PERCENT);
 
             setVisibility(mActivated && isBatteryPresent() ? View.VISIBLE : View.GONE);
             if (mBatteryReceiver != null) {
@@ -191,8 +198,7 @@ public class CircleBattery extends ImageView {
         mContext = context;
         mHandler = new Handler();
 
-        SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-        settingsObserver.observe();
+        mObserver = new SettingsObserver(mHandler);
         mBatteryReceiver = new BatteryReceiver(mContext);
 
         // initialize and setup all paint variables
@@ -300,6 +306,7 @@ public class CircleBattery extends ImageView {
         super.onAttachedToWindow();
         if (!mAttached) {
             mAttached = true;
+            mObserver.observe();
             mBatteryReceiver.updateRegistration();
             mHandler.postDelayed(mInvalidate, 250);
         }
@@ -310,6 +317,7 @@ public class CircleBattery extends ImageView {
         super.onDetachedFromWindow();
         if (mAttached) {
             mAttached = false;
+            mObserver.unobserve();
             mBatteryReceiver.updateRegistration();
             mRectLeft = null; // makes sure, size based variables get
                                 // recalculated on next attach
@@ -356,7 +364,7 @@ public class CircleBattery extends ImageView {
         if (unknownStatus) {
             mPaintFont.setColor(usePaint.getColor());
             canvas.drawText("?", textX, mTextY, mPaintFont);
-        } else if (internalLevel < 100) {
+        } else if (internalLevel < 100 && mPercentage) {
             mPaintFont.setColor(usePaint.getColor());
             canvas.drawText(Integer.toString(internalLevel), textX, mTextY, mPaintFont);
         }
@@ -415,7 +423,7 @@ public class CircleBattery extends ImageView {
 
         mPaintFont.setTextSize(mCircleSize / 2f);
 
-        float strokeWidth = mCircleSize / 7f;
+        float strokeWidth = mCircleSize / 6.5f;
         mPaintRed.setStrokeWidth(strokeWidth);
         mPaintSystem.setStrokeWidth(strokeWidth);
         mPaintGray.setStrokeWidth(strokeWidth / 3.5f);
@@ -445,7 +453,7 @@ public class CircleBattery extends ImageView {
      */
     private void initSizeMeasureIconHeight() {
         final Bitmap measure = BitmapFactory.decodeResource(getResources(),
-                com.android.systemui.R.drawable.stat_sys_battery_100);
+                com.android.systemui.R.drawable.stat_sys_wifi_signal_4_fully);
         final int x = measure.getWidth() / 2;
 
         mCircleSize = 0;
