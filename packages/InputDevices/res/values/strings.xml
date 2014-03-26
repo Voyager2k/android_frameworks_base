@@ -24,6 +24,9 @@
     <!-- German keyboard layout label. [CHAR LIMIT=35] -->
     <string name="keyboard_layout_german_label">German</string>
 
+    <!-- Greek keyboard layout label -->
+    <string name="keyboard_layout_el_GR_label">Greek</string>
+
     <!-- French keyboard layout label. [CHAR LIMIT=35] -->
     <string name="keyboard_layout_french_label">French</string>
 

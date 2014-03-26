@@ -24,6 +24,10 @@
             android:label="@string/keyboard_layout_german_label"
             android:keyboardLayout="@raw/keyboard_layout_german" />
 
+    <keyboard-layout android:name="keyboard_layout_greek"
+             android:label="@string/keyboard_layout_el_GR_label"
+             android:keyboardLayout="@raw/keyboard_layout_el_gr" />
+
     <keyboard-layout android:name="keyboard_layout_french"
             android:label="@string/keyboard_layout_french_label"
             android:keyboardLayout="@raw/keyboard_layout_french" />
