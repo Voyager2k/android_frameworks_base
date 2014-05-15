@@ -2035,6 +2035,19 @@ public final class Settings {
         public static final String VOLUME_LINK_NOTIFICATION = "volume_link_notification";
 
         /**
+         * Battery warning preferences
+         *
+         * 0 = show dialog + play sound (default)
+         * 1 = fire notification + play sound
+         * 2 = show dialog only
+         * 3 = fire notification only
+         * 4 = play sound only
+         * 5 = none
+         * @hide
+         */
+        public static final String POWER_UI_LOW_BATTERY_WARNING_POLICY = "power_ui_low_battery_warning_policy";
+
+        /**
          * Enable looking up of phone numbers of nearby places
          *
          * @hide
@@ -2075,6 +2088,20 @@ public final class Settings {
          * @hide
          */
         public static final String REVERSE_LOOKUP_PROVIDER = "reverse_lookup_provider";
+
+        /**
+         * The OpenCNAM paid account ID
+         *
+         * @hide
+         */
+        public static final String DIALER_OPENCNAM_ACCOUNT_SID = "dialer_opencnam_account_sid";
+
+        /**
+         * The OpenCNAM authentication token
+         *
+         * @hide
+         */
+        public static final String DIALER_OPENCNAM_AUTH_TOKEN = "dialer_opencnam_auth_token";
 
         /**
          * Whether silent mode should allow vibration feedback. This is used
@@ -2900,6 +2927,12 @@ public final class Settings {
         public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
 
         /**
+         * Whether to show the IME switcher in the status bar
+         * @hide
+         */
+        public static final String STATUS_BAR_IME_SWITCHER = "status_bar_ime_switcher";
+
+        /**
          *  Enable statusbar double tap gesture on to put device to sleep
          * @hide
          */
@@ -2954,6 +2987,14 @@ public final class Settings {
         public static final String LOCKSCREEN_MAXIMIZE_WIDGETS = "lockscreen_maximize_widgets";
 
         /**
+         * Recents longpress switchs apps.
+         * 0 = off
+         * 1 = on
+         * @hide
+         */
+        public static final String RECENTS_SWITCH = "recents_switch";
+
+        /**
          * Pie control panel. Meet him on the spot.
          * 0 = off
          * 1 = on
@@ -2982,12 +3023,35 @@ public final class Settings {
         public static final String PIE_GRAVITY = "pie_gravity";
 
         /**
+         * Either if notification peek is enabled of disabled
+         * 0 = disabled (default)
+         * 1 = enabled
+         * @hide
+         */
+        public static final String PEEK_STATE = "peek_state";
+
+        /**
          * Whether to show alternative recent clear all button on recent panel top right corner:
          * - navbar is not enabled/present
          * - pie immersive is disabled and not showing
          * @hide
          */
         public static final String ALTERNATIVE_RECENTS_CLEAR_ALL = "alternative_recents_clear_all";
+
+        /**
+         * Whether incomming call UI stays in background
+         *
+         * @hide
+         */
+        public static final String CALL_UI_IN_BACKGROUND = "call_ui_in_background";
+
+        /**
+         * In call dialpad state.
+         * 0 = hidden
+         * 1 = showing
+         * @hide
+         */
+        public static final String DIALPAD_STATE = "dialpad_state";
 
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -3068,7 +3132,8 @@ public final class Settings {
             QUICK_SETTINGS_QUICK_PULL_DOWN,
             SAFE_HEADSET_VOLUME,
             PIE_STATE,
-            NAVBAR_RECENTS_CLEAR_ALL
+            NAVBAR_RECENTS_CLEAR_ALL,
+            RECENTS_SWITCH
         };
 
         // Settings moved to Settings.Secure

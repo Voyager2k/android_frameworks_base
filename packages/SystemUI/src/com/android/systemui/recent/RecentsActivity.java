@@ -56,6 +56,7 @@ public class RecentsActivity extends Activity {
     private static boolean mShowing;
     private IntentFilter mIntentFilter;
     private boolean mForeground;
+    protected boolean mBackPressed;
 
     private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
         @Override
@@ -148,12 +149,13 @@ public class RecentsActivity extends Activity {
             updateWallpaperVisibility(true);
         }
 
-        SettingConfirmationHelper helper = new SettingConfirmationHelper(this);
-        helper.showConfirmationDialogForSetting(
+        SettingConfirmationHelper.showConfirmationDialogForSetting(
+            this,
             this.getString(R.string.navbar_recents_clear_all_title),
             this.getString(R.string.navbar_recents_clear_all_message),
             this.getResources().getDrawable(R.drawable.navbar_recents_clear_all),
-            Settings.System.NAVBAR_RECENTS_CLEAR_ALL);
+            Settings.System.NAVBAR_RECENTS_CLEAR_ALL,
+            null);
 
         mShowing = true;
         if (mRecentsPanel != null) {
@@ -173,7 +175,12 @@ public class RecentsActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        dismissAndGoBack();
+        mBackPressed = true;
+        try {
+            dismissAndGoBack();
+        } finally {
+            mBackPressed = false;
+        }
     }
 
     public void dismissAndGoHome() {
@@ -197,6 +204,7 @@ public class RecentsActivity extends Activity {
                             ActivityManager.RECENT_IGNORE_UNAVAILABLE);
             if (recentTasks.size() > 1 &&
                     mRecentsPanel.simulateClick(recentTasks.get(1).persistentId)) {
+                finish();
                 // recents panel will take care of calling show(false) through simulateClick
                 return;
             }
