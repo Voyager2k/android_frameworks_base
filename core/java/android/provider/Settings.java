@@ -3003,22 +3003,13 @@ public final class Settings {
 
         /**
          * Pie control panel. Meet him on the spot.
+         * State (full/lite) based on immersive mode.
          * 0 = off
          * 1 = on
          * Changes aspect depends on status bar visibility.
          * @hide
          */
         public static final String PIE_STATE = "pie_state";
-
-        /**
-         * Used by Phone Window Manager to tell PIE which mode to use
-         * depending on whether nav/statusbar is hidden
-         * 0 = off
-         * 1 = simple
-         * 2 = full
-         * @hide
-         */
-        public static final String PIE_MODE = "pie_mode";
 
         /**
          * Location of the pie in the screen
@@ -5868,6 +5859,12 @@ public final class Settings {
          * @hide
          */
         public static final String SMS_SHORT_CODE_RULE = "sms_short_code_rule";
+
+       /**
+        * Used to select TCP's default initial receiver window size in segments - defaults to a build config value
+        * @hide
+        */
+       public static final String TCP_DEFAULT_INIT_RWND = "tcp_default_init_rwnd";
 
        /**
         * Used to disable Tethering on a device - defaults to true
