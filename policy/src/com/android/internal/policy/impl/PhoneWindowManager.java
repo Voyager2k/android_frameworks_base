@@ -203,10 +203,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     // Pie
     private static final int PIE_ENABLED = 1;
 
-    // Recents clear all
-    private static final int HIDE_ALTERNATIVE_RECENTS_CLEAR_ALL = 0;
-    private static final int SHOW_ALTERNATIVE_RECENTS_CLEAR_ALL = 1;
-
     /**
      * These are the system UI flags that, when changing, can cause the layout
      * of the screen to change.
@@ -256,7 +252,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private final Object mQuickBootLock = new Object();
 
     Context mContext;
-    Context mUiContext;
+    /**
+     * Context mUiContext; // Theme Engine context, not required yet here
+     */
     IWindowManager mWindowManager;
     WindowManagerFuncs mWindowManagerFuncs;
     PowerManager mPowerManager;
@@ -621,7 +619,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         public void onReceive(Context context, Intent intent) {
            final String action = intent.getAction();
             if (action.equals(Intent.ACTION_POWERMENU)) {
-                showGlobalActionsDialog();
+                mHandler.post(mPowerLongPress);
             }
         }
 
@@ -1173,15 +1171,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     public void init(Context context, IWindowManager windowManager,
             WindowManagerFuncs windowManagerFuncs) {
         mContext = context;
-        mUiContext = ThemeUtils.createUiContext(context);
-        ThemeUtils.registerThemeChangeReceiver(context, new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mUiContext = ThemeUtils.createUiContext(mContext);
-            }
-        });
-
-
         mWindowManager = windowManager;
         mWindowManagerFuncs = windowManagerFuncs;
         mHeadless = "1".equals(SystemProperties.get("ro.config.headless", "0"));

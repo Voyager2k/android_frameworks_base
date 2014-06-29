@@ -32,6 +32,7 @@ import static libcore.io.OsConstants.S_IXGRP;
 import static libcore.io.OsConstants.S_IROTH;
 import static libcore.io.OsConstants.S_IXOTH;
 
+import android.app.ComposedIconInfo;
 import android.content.res.AssetManager;
 import android.util.Pair;
 import com.android.internal.app.IMediaContainerService;
@@ -155,8 +156,6 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
@@ -173,6 +172,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -240,8 +240,8 @@ public class PackageManagerService extends IPackageManager.Stub {
     static final int SCAN_UPDATE_TIME = 1<<6;
     static final int SCAN_DEFER_DEX = 1<<7;
     static final int SCAN_BOOTING = 1<<8;
-    static final int SCAN_TRUSTED_OVERLAY = 1<<9;
     static final int SCAN_DELETE_DATA_ON_FAILURES = 1<<9;
+    static final int SCAN_TRUSTED_OVERLAY = 1<<10;
 
     static final int REMOVE_CHATTY = 1<<16;
 
@@ -315,6 +315,8 @@ public class PackageManagerService extends IPackageManager.Stub {
     final int mSdkVersion = Build.VERSION.SDK_INT;
     final String mSdkCodename = "REL".equals(Build.VERSION.CODENAME)
             ? null : Build.VERSION.CODENAME;
+
+    final boolean mIsMultiThreaded;
 
     final Context mContext;
     final boolean mFactoryTest;
@@ -1148,6 +1150,8 @@ public class PackageManagerService extends IPackageManager.Stub {
             Slog.w(TAG, "**** ro.build.version.sdk not set!");
         }
 
+        mIsMultiThreaded = !"false".equals(SystemProperties.get("persist.sys.dalvik.multithread"));
+
         mContext = context;
         mFactoryTest = factoryTest;
         mOnlyCore = onlyCore;
@@ -1275,13 +1279,17 @@ public class PackageManagerService extends IPackageManager.Stub {
                             if (dalvik.system.DexFile.isDexOptNeeded(lib)) {
                                 alreadyDexOpted.add(lib);
                                 didDexOpt = true;
-
-                                executorService.submit(new Runnable() {
+                                Runnable task = new Runnable() {
                                     @Override
                                     public void run() {
                                         mInstaller.dexopt(lib, Process.SYSTEM_UID, true);
                                     }
-                                });
+                                };
+                                if (!mIsMultiThreaded) {
+                                    task.run();
+                                } else {
+                                    executorService.submit(task);
+                                }
                             }
                         } catch (FileNotFoundException e) {
                             Slog.w(TAG, "Library not found: " + lib);
@@ -1331,13 +1339,17 @@ public class PackageManagerService extends IPackageManager.Stub {
                         try {
                             if (dalvik.system.DexFile.isDexOptNeeded(path)) {
                                 didDexOpt = true;
-
-                                executorService.submit(new Runnable() {
+                                Runnable task = new Runnable() {
                                     @Override
                                     public void run() {
                                         mInstaller.dexopt(path, Process.SYSTEM_UID, true);
                                     }
-                                });
+                                };
+                                if (!mIsMultiThreaded) {
+                                    task.run();
+                                } else {
+                                    executorService.submit(task);
+                                }
                             }
                         } catch (FileNotFoundException e) {
                             Slog.w(TAG, "Jar not found: " + path);
@@ -3677,7 +3689,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                 // Ignore entries which are not apk's
                 continue;
             }
-            executorService.submit(new Runnable() {
+            Runnable task = new Runnable () {
                 @Override
                 public void run() {
                     PackageParser.Package pkg = scanPackageLI(file,
@@ -3690,7 +3702,12 @@ public class PackageManagerService extends IPackageManager.Stub {
                         file.delete();
                     }
                 }
-            });
+            };
+            if (!mIsMultiThreaded) {
+                task.run();
+            } else {
+                executorService.submit(task);
+            }
         }
         executorService.shutdown();
         try {
@@ -4026,29 +4043,34 @@ public class PackageManagerService extends IPackageManager.Stub {
             mDeferredDexOpt = null;
         }
         if (pkgs != null) {
-            final int[] i = {0};
+            final AtomicInteger i = new AtomicInteger(0);
             final int pkgsSize = pkgs.size();
             ExecutorService executorService = Executors.newFixedThreadPool(sNThreads);
-            final long start = System.currentTimeMillis();
             for (PackageParser.Package pkg : pkgs) {
                 final PackageParser.Package p = pkg;
                 synchronized (mInstallLock) {
-                    if (!p.mDidDexOpt) {
-                        executorService.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (!isFirstBoot()) {
-                                    i[0]++;
-                                    postBootMessageUpdate(i[0], pkgsSize);
+                    Runnable task = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isFirstBoot()) {
+                                i.getAndIncrement();
+                                try {
+                                    ActivityManagerNative.getDefault().showBootMessage(
+                                        mContext.getResources().getString(
+                                            com.android.internal.R.string.android_upgrading_apk,
+                                            i.get(), pkgsSize), true);
+                                } catch (RemoteException e) {
                                 }
+                            }
+                            if (!p.mDidDexOpt) {
                                 performDexOptLI(p, false, false, true);
                             }
-                        });
-                    } else {
-                        if (!isFirstBoot()) {
-                            i[0]++;
-                            postBootMessageUpdate(i[0], pkgsSize);
                         }
+                    };
+                    if (!mIsMultiThreaded) {
+                        task.run();
+                    } else {
+                        executorService.submit(task);
                     }
                 }
             }
@@ -4058,18 +4080,6 @@ public class PackageManagerService extends IPackageManager.Stub {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            final long time = System.currentTimeMillis() - start;
-            Slog.v("MIK", "Finished in "+time+" ms");
-        }
-    }
-
-    private void postBootMessageUpdate(int n, int total) {
-        try {
-            ActivityManagerNative.getDefault().showBootMessage(
-                    mContext.getResources().getString(
-                            com.android.internal.R.string.android_upgrading_apk,
-                            n, total), true);
-        } catch (RemoteException e) {
         }
     }
 
@@ -5409,7 +5419,8 @@ public class PackageManagerService extends IPackageManager.Stub {
             int actualHashCode = getPackageHashCode(pkg);
             return storedHashCode != actualHashCode;
         } catch(IOException e) {
-            Log.e(TAG, "Could not read hash for " + pkg + "not compiling icon pack", e);
+            // all is good enough for government work here,
+            // we'll just return true and the icons will be processed
         } finally {
             IoUtils.closeQuietly(in);
             IoUtils.closeQuietly(dataInput);
@@ -5699,6 +5710,7 @@ public class PackageManagerService extends IPackageManager.Stub {
     }
 
     /**
+     * Checks for existance of resources.arsc in target apk, then
      * Compares the 32 bit hash of the target and overlay to those stored
      * in the idmap and returns true if either hash differs
      * @param targetPkg
@@ -5708,7 +5720,21 @@ public class PackageManagerService extends IPackageManager.Stub {
      */
     private boolean shouldCreateIdmap(PackageParser.Package targetPkg,
                                       PackageParser.Package overlayPkg) {
-        if (targetPkg == null || overlayPkg == null) return false;
+        if (targetPkg == null || targetPkg.mPath == null || overlayPkg == null) return false;
+
+        // Check if the target app has resources.arsc.
+        // If it does not, then there is nothing to idmap
+        ZipFile zfile = null;
+        try {
+            zfile = new ZipFile(targetPkg.mPath);
+            if (zfile.getEntry("resources.arsc") == null) return false;
+        } catch (IOException e) {
+            Log.e(TAG, "Error while checking resources.arsc on" + targetPkg.mPath, e);
+            return false;
+        } finally {
+            IoUtils.closeQuietly(zfile);
+        }
+
 
         int targetHash = getPackageHashCode(targetPkg);
         int overlayHash = getPackageHashCode(overlayPkg);
@@ -6386,8 +6412,20 @@ public class PackageManagerService extends IPackageManager.Stub {
                 int userId) {
             if (!sUserManager.exists(userId)) return null;
             mFlags = flags;
-            return super.queryIntent(intent, resolvedType,
+            List<ResolveInfo> list = super.queryIntent(intent, resolvedType,
                     (flags & PackageManager.MATCH_DEFAULT_ONLY) != 0, userId);
+
+            // Remove protected Application components
+            if (Binder.getCallingUid() != Process.SYSTEM_UID) {
+                Iterator<ResolveInfo> itr = list.iterator();
+                while (itr.hasNext()) {
+                    if (itr.next().activityInfo.applicationInfo.protect) {
+                        itr.remove();
+                    }
+                }
+            }
+
+            return list;
         }
 
         public List<ResolveInfo> queryIntentForPackage(Intent intent, String resolvedType,
@@ -10339,7 +10377,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                         true,  //stopped
                         true,  //notLaunched
                         false, //blocked
-                        null, null, null);
+                        null, null, null, null, null);
                 if (!isSystemApp(ps)) {
                     if (ps.isAnyInstalled(sUserManager.getUserIds())) {
                         // Other user still have this package installed, so all
@@ -10408,10 +10446,12 @@ public class PackageManagerService extends IPackageManager.Stub {
         }
 
         //Cleanup theme related data
-        if (ps.pkg.mOverlayTargets.size() > 0) {
-            uninstallThemeForAllApps(ps.pkg);
-        } else if (mOverlays.containsKey(ps.pkg.packageName)) {
-            uninstallThemeForApp(ps.pkg);
+        if (ps.pkg != null) {
+            if (ps.pkg.mOverlayTargets.size() > 0) {
+                uninstallThemeForAllApps(ps.pkg);
+            } else if (mOverlays.containsKey(ps.pkg.packageName)) {
+                uninstallThemeForApp(ps.pkg);
+            }
         }
 
         return ret;
@@ -12388,6 +12428,11 @@ public class PackageManagerService extends IPackageManager.Stub {
                 "could not update icon mapping because caller does not have change config permission");
 
         synchronized (mPackages) {
+            ThemeUtils.clearIconCache();
+            if (pkgName == null) {
+                clearIconMapping();
+                return;
+            }
             mIconPackHelper = new IconPackHelper(mContext);
             try {
                 mIconPackHelper.loadIconPack(pkgName);
@@ -12398,14 +12443,13 @@ public class PackageManagerService extends IPackageManager.Stub {
             }
 
             for (Activity activity : mActivities.mActivities.values()) {
-                int id = mIconPackHelper
-                        .getResourceIdForActivityIcon(activity.info);
-                activity.info.themedIcon = id;
+                activity.info.themedIcon =
+                        mIconPackHelper.getResourceIdForActivityIcon(activity.info);
             }
 
             for (Package pkg : mPackages.values()) {
-                int id = mIconPackHelper.getResourceIdForApp(pkg.packageName);
-                pkg.applicationInfo.themedIcon = id;
+                pkg.applicationInfo.themedIcon =
+                        mIconPackHelper.getResourceIdForApp(pkg.packageName);
             }
         }
     }
@@ -12418,6 +12462,74 @@ public class PackageManagerService extends IPackageManager.Stub {
 
         for (Package pkg : mPackages.values()) {
             pkg.applicationInfo.themedIcon = 0;
+        }
+    }
+
+    @Override
+    public ComposedIconInfo getComposedIconInfo() {
+        return mIconPackHelper != null ? mIconPackHelper.getComposedIconInfo() : null;
+    }
+
+    @Override
+    public void setComponentProtectedSetting(ComponentName componentName, boolean newState,
+            int userId) {
+        enforceCrossUserPermission(Binder.getCallingUid(), userId, false, "set protected");
+
+        String packageName = componentName.getPackageName();
+        String className = componentName.getClassName();
+
+        PackageSetting pkgSetting;
+        ArrayList<String> components;
+
+        synchronized (mPackages) {
+            pkgSetting = mSettings.mPackages.get(packageName);
+
+            if (pkgSetting == null) {
+                if (className == null) {
+                    throw new IllegalArgumentException(
+                            "Unknown package: " + packageName);
+                }
+                throw new IllegalArgumentException(
+                        "Unknown component: " + packageName
+                                + "/" + className);
+            }
+
+            //Protection levels must be applied at the Component Level!
+            if (className == null) {
+                throw new IllegalArgumentException(
+                        "Must specify Component Class name."
+                );
+            } else {
+                PackageParser.Package pkg = pkgSetting.pkg;
+                if (pkg == null || !pkg.hasComponentClassName(className)) {
+                    if (pkg.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.JELLY_BEAN) {
+                        throw new IllegalArgumentException("Component class " + className
+                                + " does not exist in " + packageName);
+                    } else {
+                        Slog.w(TAG, "Failed setComponentProtectedSetting: component class "
+                                + className + " does not exist in " + packageName);
+                    }
+                }
+
+                pkgSetting.protectComponentLPw(className, newState, userId);
+                mSettings.writePackageRestrictionsLPr(userId);
+
+                components = mPendingBroadcasts.get(userId, packageName);
+                final boolean newPackage = components == null;
+                if (newPackage) {
+                    components = new ArrayList<String>();
+                }
+                if (!components.contains(className)) {
+                    components.add(className);
+                }
+            }
+        }
+
+        long callingId = Binder.clearCallingIdentity();
+        try {
+            int packageUid = UserHandle.getUid(userId, pkgSetting.appId);
+        } finally {
+            Binder.restoreCallingIdentity(callingId);
         }
     }
 }
